@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<title>TEST</title>
+	<link rel="stylesheet" type="text/css" href="http://www.jeasyui.com/easyui/themes/default/easyui.css">
+	<link rel="stylesheet" type="text/css" href="http://www.jeasyui.com/easyui/themes/icon.css">
+	<link rel="stylesheet" type="text/css" href="http://www.jeasyui.com/easyui/themes/color.css">
+	<link rel="stylesheet" type="text/css" href="http://www.jeasyui.com/easyui/demo/demo.css">
+	<script type="text/javascript" src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+	<script type="text/javascript" src="http://www.jeasyui.com/easyui/jquery.easyui.min.js"></script>
+</head>
+<body>
+	<h2>Редактор таблицы</h2>
+	<p>Кликните кнопку в таблице для редактирования данных</p>
+
+	<table id="dg" title="Товары" class="easyui-datagrid" style="width:700px;height:250px"
+			url="get_inventory.php"
+			toolbar="#toolbar" pagination="true"
+			rownumbers="true" fitColumns="true" singleSelect="true">
+		<thead>
+			<tr>
+				<th field="name" width="50">Наименование товара</th>
+				<th field="category" width="50">Категория товара</th>
+				<th field="price" width="50">Цена</th>
+			</tr>
+		</thead>
+	</table>
+	<div id="toolbar">
+		<a href="javascript:void(0)" class="easyui-linkbutton" iconCls="icon-add" plain="true" onclick="newInventory()">Новый товар</a>
+		<a href="javascript:void(0)" class="easyui-linkbutton" iconCls="icon-edit" plain="true" onclick="editInventory()">Редактировать запись</a>
+		<a href="javascript:void(0)" class="easyui-linkbutton" iconCls="icon-remove" plain="true" onclick="destroyInventory()">Удалить товар</a>
+	</div>
+
+	<div id="dlg" class="easyui-dialog" style="width:400px;height:280px;padding:10px 20px"
+			closed="true" buttons="#dlg-buttons">
+		<div class="ftitle">Информация о товаре</div>
+		<form id="fm" method="post" novalidate>
+			<div class="fitem">
+				<label>Наименование товара:</label>
+				<input name="name" class="easyui-textbox" required="true">
+			</div>
+			<div class="fitem">
+				<label>Категория товара:</label>
+        <select id="ct_selector" name="category">
+
+        </select>
+			</div>
+			<div class="fitem">
+				<label>Описание:</label>
+				<input name="description" class="easyui-textbox">
+			</div>
+			<div class="fitem">
+				<label>Цена:</label>
+				<input type="number" name="price" class="easyui-textbox" validType="number" min="0" required="true">
+			</div>
+		</form>
+	</div>
+	<div id="dlg-buttons">
+		<a href="javascript:void(0)" class="easyui-linkbutton c6" iconCls="icon-ok" onclick="saveInventory()" style="width:90px">Сохранить</a>
+		<a href="javascript:void(0)" class="easyui-linkbutton" iconCls="icon-cancel" onclick="javascript:$('#dlg').dialog('close')" style="width:90px">Отмена</a>
+	</div>
+	<script type="text/javascript">
+		var url;
+		function newInventory(){
+			$('#dlg').dialog('open').dialog('setTitle','Новый товар');
+			$('#fm').form('clear');
+			url = 'save_inventory.php';
+		}
+		function editInventory(){
+			var row = $('#dg').datagrid('getSelected');
+			if (row){
+				$('#dlg').dialog('open').dialog('setTitle','Редактировать запись');
+				$('#fm').form('load',row);
+				url = 'update_inventory.php?id='+row.id;
+			}
+		}
+		function saveInventory(){
+			$('#fm').form('submit',{
+				url: url,
+				onSubmit: function(){
+					return $(this).form('validate');
+				},
+				success: function(result){
+					var result = eval("("+result+")");
+					if (result.errorMsg){
+						$.messager.show({
+							title: 'Ошибка',
+							msg: result.errorMsg
+						});
+					} else {
+						$('#dlg').dialog('close');		// close the dialog
+						$('#dg').datagrid('reload');	// reload the data
+					}
+				}
+			});
+		}
+		function destroyInventory(){
+			var row = $('#dg').datagrid('getSelected');
+			if (row){
+				$.messager.confirm('Confirm','Удалить товар?',function(r){
+					if (r){
+						$.post('destroy_inventory.php',{id:row.id},function(result){
+							if (result.success){
+								$('#dg').datagrid('reload');	// reload the data
+							} else {
+								$.messager.show({	// show error message
+									title: 'Ошибка',
+									msg: result.errorMsg
+								});
+							}
+						},'json');
+					}
+				});
+			}
+		}
+    $(function() {
+			$("#ct_selector").load("category_getter.php");
+			});
+	</script>
+	<style type="text/css">
+		#fm{
+			margin:0;
+			padding:10px 30px;
+		}
+		.ftitle{
+			font-size:14px;
+			font-weight:bold;
+			padding:5px 0;
+			margin-bottom:10px;
+			border-bottom:1px solid #ccc;
+		}
+		.fitem{
+			margin-bottom:5px;
+		}
+		.fitem label{
+			display:inline-block;
+			width:80px;
+		}
+		.fitem input{
+			width:160px;
+		}
+	</style>
+</body>
+</html>
